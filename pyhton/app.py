@@ -671,11 +671,9 @@ def generate_singbox_config(cert_path: str, key_path: str) -> dict:
     
     rule_set = [
         {'tag': 'netflix', 'type': 'remote', 'format': 'binary',
-         'url': 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/netflix.srs'},
-        {'tag': 'openai', 'type': 'remote', 'format': 'binary',
-         'url': 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/openai.srs'}
+         'url': 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/netflix.srs'}
     ]
-    wireguard_rule_sets = ['openai', 'netflix']
+    wireguard_rule_sets = ['netflix']
     
     need_youtube_warp = YT_WARPOUT
     if not need_youtube_warp:
@@ -962,7 +960,7 @@ def add_visit_task():
 
 class SubscriptionHandler(BaseHTTPRequestHandler):
     sub_content = ""
-    
+
     def do_GET(self):
         if self.path == subscribePath:
             self.send_response(200)
@@ -971,36 +969,40 @@ class SubscriptionHandler(BaseHTTPRequestHandler):
             encoded = base64.b64encode(self.sub_content.encode()).decode()
             self.wfile.write(encoded.encode())
         elif self.path == '/':
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html; charset=utf-8')
-            self.end_headers()
-            html = f'Hello world!<br><br>You can access /{SUB_PATH.lstrip("/")}(Default: /sub) get your nodes!'
-            self.wfile.write(html.encode())
+            try:
+                with open('index.html', 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(html_content.encode('utf-8'))
+            except Exception:
+                fallback_html = 'Hello world!<br><br>You can access /{SUB_PATH}(Default: /sub) get your nodes!'
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(fallback_html.encode('utf-8'))
         else:
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b'Not Found')
-    
+
     def log_message(self, format, *args):
         pass
 
 def start_http_server(sub_txt: str, port: int):
     SubscriptionHandler.sub_content = sub_txt
-    
-    for attempt in range(5):
-        try:
-            server = HTTPServer(('0.0.0.0', port), SubscriptionHandler)
-            print(f'HTTP server is listening on {port}')
-            thread = threading.Thread(target=server.serve_forever, daemon=True)
-            thread.start()
-            return server
-        except OSError as e:
-            if e.errno == 98:
-                print(f'Port {port} in use, trying {port + 1}...')
-                port += 1
-            else:
-                raise
-    raise Exception('Could not find available port')
+    try:
+        server = HTTPServer(('0.0.0.0', port), SubscriptionHandler)
+        print(f'HTTP server is listening on {port}')
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        return server
+    except OSError as e:
+        if e.errno == 98:  # Address already in use
+            raise Exception(f'Port {port} is already in use.') from e
+        else:
+            raise
 
 # ======================== 主流程 ========================
 
