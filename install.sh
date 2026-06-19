@@ -263,7 +263,7 @@ quick_command() {
 }
 
 show_nodes(){
-cat ${WORKDIR}/public/sub.txt
+cat ${WORKDIR}/.npm/sub.txt
 TOKEN=$(sed -n 's/^SUB_PATH=\(.*\)/\1/p' $HOME/domains/${USERNAME}.${CURRENT_DOMAIN}/public_nodejs/.env)
 yellow "\n订阅链接: https://${USERNAME}.${CURRENT_DOMAIN}/${TOKEN}\n节点订阅链接适用于V2rayN/Nekoray/ShadowRocket/karing/Loon/sterisand 等\n"
 }
